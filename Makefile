@@ -234,6 +234,7 @@ _ANSIBLE_exe = ${TOOLCHAIN_PREFIX}/bin/ansible
 ${_ANSIBLE_check}: 
 	$(MAKE) ${_VENV_check}
 	${ENV} pip3 install ansible==${ANSIBLE_VERSION}
+	${ENV} pip3 install jmespath
 	test -x ${_ANSIBLE_exe}
 	touch ${_ANSIBLE_check}
 
