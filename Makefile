@@ -10,7 +10,6 @@ AWS_CLI_VERSION 		?= 2.25.14
 AWSCDK_VERSION 			?= 2.1007.0
 NODEJS_VERSION 			?= 20.18.2
 NPM_VERSION				?= 11.3.0
-GOLANG_VERSION 			?= 1.23.5
 TERRAFORM_VERSION 		?= 1.11.4
 TERRAFORMCDK_VERSION 	?= 0.20.11
 TERRAFORMCDK_PY_VERSION 	?= 0.20.11
@@ -125,28 +124,6 @@ ${_TYPESCRIPT_check}:
 
 # Individual component target
 typescript: ${_TYPESCRIPT_check}
-
-#####################################################
-# GOLANG SETUP
-#####################################################
-_GOLANG_archive=${ARC_DIR}/go${GOLANG_VERSION}.linux-amd64.tar.gz
-_GOLANG_exe = ${TOOLCHAIN_PREFIX}/bin/go
-_GOLANG_url = https://go.dev/dl/${_GOLANG_archive}
-_GOLANG_check = ${TOOLCHAIN_PREFIX}/.golang-${GOLANG_VERSION}
-
-${_GOLANG_archive}: ${ARC_DIR}
-	wget ${_GOLANG_url} -O ${_GOLANG_archive}
-	test -f ${_GOLANG_archive}
-	touch ${_GOLANG_archive}
-
-${_GOLANG_check}: 
-	$(MAKE) ${_GOLANG_archive}
-	tar xvzf ${_GOLANG_archive} --strip-components=1 -C ${TOOLCHAIN_PREFIX}
-	test -x ${_GOLANG_exe}
-	touch ${_GOLANG_check}
-
-# Individual component target
-golang: ${_GOLANG_check}
 
 #####################################################
 # TERRAFORM SETUP
@@ -286,7 +263,6 @@ clean:
 		${_AWS_CLI_srcdir} \
 		${_AWS_CLI_archive} \
 		${_NODEJS_archive} \
-		${_GOLANG_archive} \
 		${_TERRAFORM_archive} ${BUILD_DIR}/terraform
 	- rmdir ${BUILD_DIR}
 	- rmdir ${ARC_DIR}
