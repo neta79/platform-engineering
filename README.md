@@ -179,6 +179,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## Author
+
+**Neta** - *Initial work and maintenance*
+- GitHub: [Andrea Gronchi](https://github.com/neta79)
+- Email: ne<!-- contact -->ta<!-- please don't -->@lo<!-- scrape -->gn<!-- this -->.in<!-- email -->fo
+
 ## Acknowledgments
 
 - HashiCorp for Terraform
