@@ -20,4 +20,7 @@ WORKDIR /src
 ENV ANSIBLE_HOST_KEY_CHECKING=False
 ENV TOOLCHAIN_PREFIX=/toolchain
 ENV PATH=/toolchain/bin:$PATH
+COPY entrypoint.sh /toolchain/entrypoint.sh
+RUN chmod +x /toolchain/entrypoint.sh
+ENTRYPOINT [ "/toolchain/entrypoint.sh" ]
 CMD ["bash", "-i"]
