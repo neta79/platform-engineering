@@ -7,28 +7,36 @@ TOOLCHAIN_IMAGE_NAME 	?= platform-engineering
 TOOLCHAIN_IMAGE_TAG 	?= latest
 PYTHON 					?= python3
 AWS_CLI_VERSION 		?= 2.25.14
-AWSCDK_VERSION 			?= 2.1007.0
+AWSCDK_VERSION 			?= 2.1010.0
 NODEJS_VERSION 			?= 20.18.2
 NPM_VERSION				?= 11.3.0
 TERRAFORM_VERSION 		?= 1.11.4
 TERRAFORMCDK_VERSION 	?= 0.20.11
-TERRAFORMCDK_PY_VERSION 	?= 0.20.11
-TERRAFORMCDK_PY_AWS_PROVIDER_VERSION 	?= 19.50.0
-TYPESCRIPT_VERSION      = 5.8.3
-AWS_CDK_VERSION 		?= 2.1007.0
-ANSIBLE_VERSION 		?= 11.4.0
-PIPENV_VERSION 			?= 2024.4.1
+TERRAFORMCDK_PY_VERSION ?= 0.20.11
+TERRAFORMCDK_PY_AWS_PROVIDER_VERSION ?= 19.50.0
+TYPESCRIPT_VERSION      ?= 5.8.3
+ANSIBLE_VERSION			?= 11.4.0
+AWS_BOTO3_VERSION		?= 1.37.37
+
+PIP_PACKAGES			= \
+	ansible==${ANSIBLE_VERSION} \
+	boto3==${AWS_BOTO3_VERSION} \
+	cdktf==${TERRAFORMCDK_VERSION} \
+	cdktf-cdktf-provider-aws==${TERRAFORMCDK_PY_AWS_PROVIDER_VERSION} \
+	jmespath==1.0.1 \
+	pipenv==2024.4.1 
+
+NPM_PACKAGES = \
+	typescript@${TYPESCRIPT_VERSION} \
+	aws-cdk@${AWSCDK_VERSION} \
+	cdktf-cli@${TERRAFORMCDK_VERSION}
 
 ALL_TARGETS = \
 	venv \
-	pipenv \
 	nodejs \
-	typescript \
 	terraform \
-	terraform-cdk \
 	aws-cli \
-	aws-cdk \
-	ansible
+	pip_packages
 
 .PHONY: ${ALL_TARGETS} 
 
@@ -67,18 +75,32 @@ ${_VENV_check}:
 	test -x ${_VENV_python}
 	touch ${_VENV_check}
 
-_PIPENV_check = ${TOOLCHAIN_PREFIX}/.pipenv-${PIPENV_VERSION}
-_PIPENV_exe = ${TOOLCHAIN_PREFIX}/bin/pipenv
 
-${_PIPENV_check}: 
+# Parse the PIP_PACKAGES list to generate dependency targets
+PIP_PACKAGE_TARGETS = $(foreach pkg,$(PIP_PACKAGES),\
+	${TOOLCHAIN_PREFIX}/.pip_$(shell echo $(pkg) | sed 's/==/_/g'))
+
+# Target to install all pip packages
+pip_packages: $(PIP_PACKAGE_TARGETS)
+
+
+${TOOLCHAIN_PREFIX}/.pip_%: # format: ${TOOLCHAIN_PREFIX}/.pip_<package_name>_<version>
+	@_PIP_PACKAGE_NAME=$$(echo $@ | sed 's|${TOOLCHAIN_PREFIX}/.pip_||' | cut -d '_' -f 1) && \
+	 _PIP_PACKAGE_VERSION=$$(echo $@ | sed 's|${TOOLCHAIN_PREFIX}/.pip_||' | cut -d '_' -f 2) && \
+	 _CHECK_FILE=${TOOLCHAIN_PREFIX}/.pip_$${_PIP_PACKAGE_NAME}-$${_PIP_PACKAGE_VERSION} && \
+	 test -f $${_CHECK_FILE} || \
+ 	 $(MAKE) _pip_package_install _PIP_PACKAGE=$${_PIP_PACKAGE_NAME}==$${_PIP_PACKAGE_VERSION} _CHECK_FILE=$${_CHECK_FILE} 
+
+_pip_package_install:
+	@echo "installing ${_PIP_PACKAGE}"
 	$(MAKE) ${_VENV_check}
-	${ENV} pip3 install pipenv==${PIPENV_VERSION}
-	test -x ${_PIPENV_exe}
-	touch ${_PIPENV_check}
+	${ENV} pip3 install ${_PIP_PACKAGE}
+	${ENV} pip3 freeze | grep "^${_PIP_PACKAGE}"
+	touch ${_CHECK_FILE}
+
 
 # Individual component targets
 venv: ${_VENV_check}
-pipenv: ${_PIPENV_check}
 
 #####################################################
 # NODEJS AND TYPESCRIPT SETUP
@@ -101,6 +123,29 @@ ${_NODEJS_check}:
 	test -x ${_NODEJS_exe}
 	touch ${_NODEJS_check}
 
+# Parse the PIP_PACKAGES list to generate dependency targets
+NPM_PACKAGE_TARGETS = $(foreach pkg,$(NPM_PACKAGES),\
+	${TOOLCHAIN_PREFIX}/.npm_$(shell echo $(pkg) | sed 's/@/_/g'))
+
+# Target to install all pip packages
+npm_packages: $(NPM_PACKAGE_TARGETS)
+
+
+${TOOLCHAIN_PREFIX}/.npm_%: # format: ${TOOLCHAIN_PREFIX}/.npm_<package_name>_<version>
+	@_NPM_PACKAGE_NAME=$$(echo $@ | sed 's|${TOOLCHAIN_PREFIX}/.npm_||' | cut -d '_' -f 1) && \
+	 _NPM_PACKAGE_VERSION=$$(echo $@ | sed 's|${TOOLCHAIN_PREFIX}/.npm_||' | cut -d '_' -f 2) && \
+	 _CHECK_FILE=${TOOLCHAIN_PREFIX}/.npm_$${_NPM_PACKAGE_NAME}-$${_NPM_PACKAGE_VERSION} && \
+	 test -f $${_CHECK_FILE} || \
+ 	 $(MAKE) _npm_package_install _NPM_PACKAGE=$${_NPM_PACKAGE_NAME}@$${_NPM_PACKAGE_VERSION} _CHECK_FILE=$${_CHECK_FILE} 
+
+_npm_package_install:
+	@echo "installing ${_NPM_PACKAGE}"
+	$(MAKE) ${_NPM_check}
+	${ENV} npm install --global ${_NPM_PACKAGE}
+	${ENV} npm ls --global | grep "${_NPM_PACKAGE}"
+	touch ${_CHECK_FILE}
+
+
 ${_NPM_check}:
 	$(MAKE) ${_NODEJS_check}
 	${ENV} npm install --global npm@${NPM_VERSION}
@@ -110,20 +155,6 @@ ${_NPM_check}:
 # Individual component target
 nodejs: ${_NODEJS_check} ${_NPM_check}
 
-#####################################################
-# TYPESCRIPT SETUP
-#####################################################
-_TYPESCRIPT_check = ${TOOLCHAIN_PREFIX}/.typescript-${TYPESCRIPT_VERSION}
-_TYPESCRIPT_exe = ${TOOLCHAIN_PREFIX}/lib/node_modules/typescript/bin/tsc
-
-${_TYPESCRIPT_check}: 
-	$(MAKE) ${_NODEJS_check}
-	${ENV} npm install --global typescript@${TYPESCRIPT_VERSION}
-	test -x ${_TYPESCRIPT_exe}
-	touch ${_TYPESCRIPT_check}
-
-# Individual component target
-typescript: ${_TYPESCRIPT_check}
 
 #####################################################
 # TERRAFORM SETUP
@@ -149,36 +180,6 @@ ${_TERRAFORM_check}:
 # Individual component target
 terraform: ${_TERRAFORM_check}
 
-#####################################################
-# TERRAFORM CDK SETUP
-#####################################################
-_TERRACDK_check = ${TOOLCHAIN_PREFIX}/.cdktf-${TERRAFORMCDK_VERSION}
-_TERRACDK_exe = ${TOOLCHAIN_PREFIX}/lib/node_modules/cdktf-cli/bundle/bin/cdktf
-_TERRACDK_PY_check = ${TOOLCHAIN_PREFIX}/.cdktf_py-${TERRAFORMCDK_PY_VERSION}
-_TERRACDK_PY_dir = ${TOOLCHAIN_PREFIX}/lib/python${_PYTHON_VERSION_MAJOR_MINOR}/site-packages/cdktf
-_TERRACDK_PY_AWS_PROVIDER_check = ${TOOLCHAIN_PREFIX}/.cdktf_py_aws_provider-${TERRAFORMCDK_PY_AWS_PROVIDER_VERSION}
-_TERRACDK_PY_AWS_PROVIDER_dir = ${TOOLCHAIN_PREFIX}/lib/python${_PYTHON_VERSION_MAJOR_MINOR}/site-packages/cdktf_cdktf_provider_aws
-
-${_TERRACDK_check}: 
-	$(MAKE) ${_NODEJS_check} ${_TERRAFORM_check} ${_VENV_check}
-	${ENV} npm install --global cdktf-cli@${TERRAFORMCDK_VERSION}
-	test -x ${_TERRACDK_exe}
-	touch ${_TERRACDK_check}
-
-${_TERRACDK_PY_check}: 
-	$(MAKE) ${_VENV_check}
-	${ENV} pip3 install cdktf==${TERRAFORMCDK_PY_VERSION}
-	test -d ${_TERRACDK_PY_dir}
-	touch ${_TERRACDK_PY_check}
-
-${_TERRACDK_PY_AWS_PROVIDER_check}:
-	$(MAKE) ${_VENV_check}
-	${ENV} pip3 install cdktf-cdktf-provider-aws==${TERRAFORMCDK_PY_AWS_PROVIDER_VERSION}
-	test -d ${_TERRACDK_PY_AWS_PROVIDER_dir}
-	touch ${_TERRACDK_PY_AWS_PROVIDER_check}
-
-# Individual component target
-terraform-cdk: ${_TERRACDK_check} ${_TERRACDK_PY_check} ${_TERRACDK_PY_AWS_PROVIDER_check}
 
 #####################################################
 # AWS TOOLS SETUP
@@ -210,36 +211,7 @@ ${_AWS_CLI_check}:
 # Individual component target
 aws-cli: ${_AWS_CLI_check}
 
-#####################################################
-# AWS CDK SETUP
-#####################################################
-_AWSCDK_check = ${TOOLCHAIN_PREFIX}/.awscdk-${AWSCDK_VERSION}
-_AWSCDK_exe = ${TOOLCHAIN_PREFIX}/lib/node_modules/aws-cdk/bin/cdk
 
-${_AWSCDK_check}: 
-	$(MAKE) ${_NODEJS_check} ${_AWS_CLI_check}
-	${ENV} npm install --global aws-cdk@${AWSCDK_VERSION}
-	test -x ${_AWSCDK_exe}
-	touch ${_AWSCDK_check}
-
-# Individual component target
-aws-cdk: ${_AWSCDK_check}
-
-#####################################################
-# ANSIBLE SETUP
-#####################################################
-_ANSIBLE_check = ${TOOLCHAIN_PREFIX}/.ansible-${ANSIBLE_VERSION}
-_ANSIBLE_exe = ${TOOLCHAIN_PREFIX}/bin/ansible
-
-${_ANSIBLE_check}: 
-	$(MAKE) ${_VENV_check}
-	${ENV} pip3 install ansible==${ANSIBLE_VERSION}
-	${ENV} pip3 install jmespath
-	test -x ${_ANSIBLE_exe}
-	touch ${_ANSIBLE_check}
-
-# Individual component target
-ansible: ${_ANSIBLE_check}
 
 #####################################################
 # MAIN TARGETS FOR HUMAN USE
