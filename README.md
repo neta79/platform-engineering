@@ -22,7 +22,7 @@ Platform Engineering is a comprehensive solution designed to build and manage a 
 The platform engineering toolchain includes:
 
 - **Terraform** - Infrastructure as Code
-- **Terraform CDK** - For defining infrastructure using Python
+- **Terraform CDK** - For defining infrastructure using Typescript, Python (With AWS provider)
 - **AWS CLI** - Command line interface for AWS services
 - **AWS CDK** - Cloud Development Kit for AWS
 - **Ansible** - Configuration management and deployment
@@ -72,10 +72,13 @@ The toolchain can be customized by modifying environment variables:
 | `TOOLCHAIN_PROMPT` | Shell prompt prefix | `pe` |
 | `TOOLCHAIN_IMAGE_NAME` | Docker image name | `platform-engineering` |
 | `TOOLCHAIN_IMAGE_TAG` | Docker image tag | `latest` |
-| `TERRAFORM_VERSION` | Terraform version | `1.11.4` |
-| `AWS_CLI_VERSION` | AWS CLI version | `2.25.14` |
-| `AWSCDK_VERSION` | AWS CDK version | `2.1007.0` |
-| `ANSIBLE_VERSION` | Ansible version | `11.4.0` |
+| `TERRAFORM_VERSION` | Terraform  | `1.11.4` |
+| `TERRAFORMCDK_VERSION` | Terraform CDK (TS & Python)  | `0.20.11` |
+| `TERRAFORMCDK_PY_AWS_PROVIDER_VERSION` | Terraform CDK Python AWS Provider  | `19.50.0` |
+| `AWS_CLI_VERSION` | AWS CLI | `2.25.14` |
+| `AWSCDK_VERSION` | AWS CDK | `2.1010.0` |
+| `AWS_BOTO3_VERSION` | AWS Boto3 Python lib | `1.37.37` |
+| `ANSIBLE_VERSION` | Ansible | `11.4.0` |
 
 Modify the `Makefile` or override the relevant *`_VERSION` variable to customize built-in tool versions.
 
