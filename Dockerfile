@@ -15,7 +15,7 @@ RUN echo ". /toolchain/bin/activate" >> /root/.bashrc
 FROM python:3.12 AS base
 COPY --from=builder /toolchain /toolchain
 COPY --from=builder /root/.bashrc /root/.bashrc
-RUN apt update && apt -y install vim less && echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+RUN apt update && apt -y install vim less groff && echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 WORKDIR /src
 ENV ANSIBLE_HOST_KEY_CHECKING=False
 ENV TOOLCHAIN_PREFIX=/toolchain
