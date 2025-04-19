@@ -168,6 +168,14 @@ build:
     - terraform apply -auto-approve
 ```
 
+## Host system security
+
+**CAUTION:** This image is intended for supervised development environments. Usage in DevOps & GitOps pipelines, host-only or air-gapped development configurations are clearly the best fitting scenarios, however be mindful that using the "pe" Docker wrapper creates a significant security vulnerability in your system's trust chain. 
+
+As it is with any other scenario where Docker is available, __never grant Docker execution credentials to untrusted users__. Doing so essentially provides them with a path to root-equivalent access on the host system, compromising your security posture and potentially leading to a complete security compromise of the host environment.
+
+The wrapper enables root-mounting of arbitrary host paths, effectively circumventing standard user permission boundaries and containment mechanisms. This could lead to privilege escalation and unauthorized data access if misused.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
