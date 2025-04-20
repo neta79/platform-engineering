@@ -3,11 +3,11 @@
 PE_IMAGE=${PE_IMAGE-platform-engineering}
 PE_VERSION=${PE_VERSION-latest}
 PE_DEBUG=${PE_DEBUG-0}
-PE_USER=$(id -un)
-PE_USER_ID=$(id -u)
-PE_GROUPS=$(id -G|tr ' ' ',')
+PE_USER_ID=${PE_USER_ID-$(id -u)}
+PE_GROUP_ID=${PE_GROUP_ID-$(id -g)}
 
 
+container_name=$(echo ${PE_IMAGE} | tr '[:upper:]' '[:lower:]' | tr '-' '_')_$(id -un)_$$
 image_name="${PE_IMAGE}:${PE_VERSION}"
 
 LOG_P="[\033[1;32m${PE_IMAGE}-wrapper\033[0m] "
@@ -26,7 +26,7 @@ then
     exit 1
 fi
 
-args="-e PE_DEBUG=${PE_DEBUG} --rm -ti -P -v .:/src -h ${PE_IMAGE}"
+args="-e PE_DEBUG=${PE_DEBUG} --rm -ti -P -v .:/src -h ${PE_IMAGE} --name ${container_name}"
 
 if test -z "${SSH_AUTH_SOCK}"
 then
@@ -89,31 +89,19 @@ then
     args="${args} -e AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}"
 fi
 
-if ! test -z "${PE_USER}"
-then
-    if test ${PE_DEBUG} -eq 1
-    then
-        echo "${LOG_P}injecting PE_USER=${PE_USER}"
-    fi
-    args="${args} -e PE_USER=${PE_USER}"
-fi
-
 if ! test -z "${PE_USER_ID}"
 then
+    if ! test -z "${PE_GROUP_ID}"
+    then
+        uid_map="${PE_USER_ID}:${PE_GROUP_ID}"
+    else
+        uid_map="${PE_USER_ID}"
+    fi
     if test ${PE_DEBUG} -eq 1
     then
-        echo "${LOG_P}injecting PE_USER_ID=${PE_USER_ID}"
+        echo "${LOG_P}injecting PE_USER_ID=${uid_map}"
     fi
-    args="${args} -e PE_USER_ID=${PE_USER_ID}"
-fi
-
-if ! test -z "${PE_GROUPS}"
-then
-    if test ${PE_DEBUG} -eq 1
-    then
-        echo "${LOG_P}injecting PE_GROUPS=${PE_GROUPS}"
-    fi
-    args="${args} -e PE_GROUPS=${PE_GROUPS}"
+    args="${args} -u ${uid_map}"
 fi
 
 
