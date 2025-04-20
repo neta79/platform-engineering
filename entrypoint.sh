@@ -22,7 +22,10 @@ ensure_user() {
 
     if ! id "${user_name}" >/dev/null 2>&1; then
         [ "${PE_DEBUG}" = 1 ] && echo "${LOG_P}Creating user ${user_name} with UID ${user_id} and GID(s) ${group_ids}"
-        useradd -u "${user_id}" -g "${group_ids%%,*}" -G "${group_ids#*,}" -m "${user_name}"
+        chown "${user_id}" /pe-user
+        chgroup "${group_ids%%,*}" /pe-user
+        chmod 700 /pe-user
+        useradd -u "${user_id}" -g "${group_ids%%,*}" -G "${group_ids#*,}" -d /pe-user "${user_name}"
     else
         [ "${PE_DEBUG}" = 1 ] && echo "${LOG_P}User ${user_name} already exists"
     fi
@@ -62,7 +65,7 @@ ensure_user "${PE_USER}" "${PE_USER_ID}" "${PE_GROUPS}"
 
 
 if [ -z "$*" ]; then
-    exec su "${PE_USER}" -P -c bash -i
+    su "${PE_USER}" -P -c bash -i
 else
-    exec su "${PE_USER}" -P -c "$*" 
+    su "${PE_USER}" -P -c "$*" 
 fi

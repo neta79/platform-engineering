@@ -62,7 +62,7 @@ then
     then
         echo "${LOG_P}injecting aws credentials directory: $awsdir" >&2
     fi
-    args="${args} -v ${awsdir}:/root/.aws:ro"
+    args="${args} -v ${awsdir}:/pe-user/.aws:ro"
 fi
 if ! test -z "${AWS_ACCESS_KEY_ID}"
 then
