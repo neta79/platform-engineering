@@ -12,6 +12,8 @@ RUN make toolchain TOOLCHAIN_PREFIX=/toolchain
 RUN echo ". /toolchain/bin/activate" >> /etc/bash.bashrc
 RUN echo "PS1='\h:\w\$ '" >> /etc/bash.bashrc
 RUN echo "PS1='\[\033[01;31m\]  **** WATCH OUT ****  \[\033[00m\]YOU ARE root@\h:\w\$ '" >> /root/.bashrc
+COPY entrypoint.sh /toolchain/entrypoint.sh
+RUN chmod +x /toolchain/entrypoint.sh
 
 FROM python:3.12 AS base
 COPY --from=builder /toolchain /toolchain
@@ -22,4 +24,5 @@ WORKDIR /src
 ENV ANSIBLE_HOST_KEY_CHECKING=False
 ENV TOOLCHAIN_PREFIX=/toolchain
 ENV PATH=/toolchain/bin:$PATH
+ENTRYPOINT [ "/toolchain/entrypoint.sh" ]
 CMD ["bash", "-i"]
